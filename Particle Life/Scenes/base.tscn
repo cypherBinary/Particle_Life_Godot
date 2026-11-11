@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://dd31esyf6u7pa"]
+
+[ext_resource type="Script" uid="uid://08371ts3m3jm" path="res://Scripts/base.gd" id="1_31hd7"]
+[ext_resource type="Script" uid="uid://yavnxtlj2obq" path="res://Scripts/camera_2d.gd" id="2_1w1q6"]
+[ext_resource type="Script" uid="uid://ck2l83a667i6j" path="res://Scripts/creature_manager.gd" id="3_6qyon"]
+
+[node name="Base" type="Node2D" unique_id=991651512]
+script = ExtResource("1_31hd7")
+seeded = false
+particleCount = 10000
+particleTypes = 5
+particlesSize = 6
+creation_area_ratio = Vector2(16, 9)
+creation_area_size = 150
+max_speed = 300.0
+max_force = 0.5
+damping_force = 0.8
+particle_repulsion_distance = 50.0
+particle_attraction_distance = 100.0
+grid_cell_size = 150
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=543455558]
+zoom = Vector2(0.25, 0.25)
+script = ExtResource("2_1w1q6")
+zoom_speed = 1.2
+min_zoom = 0.01
+max_zoom = 10.0
+
+[node name="Creature_Manager" type="Node" parent="." unique_id=231231456 node_paths=PackedStringArray("world")]
+script = ExtResource("3_6qyon")
+world = NodePath("..")

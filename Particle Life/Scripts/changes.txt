@@ -1,0 +1,11 @@
+if not cells.has(cell):
+	cells[cell] = -1
+			
+next[i] = cells[cell]
+cells[cell] = i
+
+
+var previous: int = cells.get(cell, -1)
+
+next[i] = previous
+cells[cell] = i

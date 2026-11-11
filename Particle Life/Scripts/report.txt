@@ -1,0 +1,1164 @@
+================================================================================
+PROJECT STRUCTURE
+================================================================================
+
+./
+├── .git/
+│   ├── gk/
+│   │   └── config
+│   ├── hooks/
+│   │   ├── applypatch-msg.sample
+│   │   ├── commit-msg.sample
+│   │   ├── fsmonitor-watchman.sample
+│   │   ├── post-update.sample
+│   │   ├── pre-applypatch.sample
+│   │   ├── pre-commit.sample
+│   │   ├── pre-merge-commit.sample
+│   │   ├── pre-push.sample
+│   │   ├── pre-rebase.sample
+│   │   ├── pre-receive.sample
+│   │   ├── prepare-commit-msg.sample
+│   │   ├── push-to-checkout.sample
+│   │   ├── sendemail-validate.sample
+│   │   └── update.sample
+│   ├── info/
+│   │   └── exclude
+│   ├── logs/
+│   │   ├── refs/
+│   │   │   └── heads/
+│   │   │       └── master
+│   │   └── HEAD
+│   ├── objects/
+│   │   ├── 00/
+│   │   │   └── 9cea3d6b65e7d0236aa3c8941158e96a32130f
+│   │   ├── 07/
+│   │   │   └── 3d789df0d3f53344c5461c0771f3a41aef3e31
+│   │   ├── 13/
+│   │   │   └── c4fc96641842750684b94d68500f926909a91c
+│   │   ├── 15/
+│   │   │   └── 206839d19927a75ab2184c537e32a9684219c4
+│   │   ├── 2b/
+│   │   │   └── 0bda0f68d7343cf31ff06fb8c527a37ed167d9
+│   │   ├── 34/
+│   │   │   └── fb50f923bf899752956bee893f2c9288c462aa
+│   │   ├── 43/
+│   │   │   └── 7eb676c273bb5a57dc7df1ed702307320405e6
+│   │   ├── 61/
+│   │   │   └── 510e14cd75b8840807846a94b864f5acc1f39e
+│   │   ├── 74/
+│   │   │   └── 2af0f64c6138850e5d497fcff853074a08c368
+│   │   ├── 75/
+│   │   │   └── fd0b90b69286dc4d2ce81b78da92dc26276011
+│   │   ├── 89/
+│   │   │   └── bc3e52960359bb17b735a222b893ac23794e15
+│   │   ├── 96/
+│   │   │   └── 417bc94debab897a2e034834503cf006498f20
+│   │   ├── a0/
+│   │   │   └── 62b0e669490cf9e423f3a1ce878663f9bcb2aa
+│   │   ├── a9/
+│   │   │   └── b558bd5ebb840386f3b71457378bf20b228afd
+│   │   ├── ab/
+│   │   │   └── f8a957ab840ee5b701b87ee6ee7e3dc898f849
+│   │   ├── b7/
+│   │   │   └── 690a1b693d1165b6f56b5338e1cc68cfe78bec
+│   │   ├── bd/
+│   │   │   └── 40106cd8e7a6efaa513b8f16f97389f5e61606
+│   │   ├── cf/
+│   │   │   └── fa2aea0440f7a46004ff5310197b29a881bf44
+│   │   ├── e0/
+│   │   │   └── ca9d328b6004bc6c3248afdd2df1a1f7c9cd28
+│   │   ├── e6/
+│   │   │   └── 0b8f0a603682e7847b07e4e513e7a48441d47a
+│   │   ├── ef/
+│   │   │   └── 6474dc8662ef9f203471e38ae5aa50af8e5453
+│   │   ├── fa/
+│   │   │   └── 8ac09877f38600dd21a11061c133e3da47bbf5
+│   │   ├── info/
+│   │   └── pack/
+│   ├── refs/
+│   │   ├── heads/
+│   │   │   └── master
+│   │   └── tags/
+│   ├── COMMIT_EDITMSG
+│   ├── config
+│   ├── description
+│   ├── HEAD
+│   └── index
+├── Utils/
+│   ├── Utils.gd
+│   └── Utils.gd.uid
+├── base.gd
+├── base.gd.uid
+├── camera_2d.gd
+├── camera_2d.gd.uid
+├── changes.txt
+├── compute.gd
+├── compute.gd.uid
+├── compute_test.gd
+├── compute_test.gd.uid
+├── grid_matrix.gd
+├── grid_matrix.gd.uid
+├── README.md
+├── test.glsl
+└── test.glsl.import
+
+
+================================================================================
+TEXT FILE CONTENTS
+================================================================================
+
+================================================================================
+FILE: README.md
+PATH: README.md
+================================================================================
+
+### camera_2d should be on the camera
+### base should be on a normal node2d
+
+
+================================================================================
+FILE: base.gd
+PATH: base.gd
+================================================================================
+
+extends Node2D
+
+# creation
+@export var particleCountPerType := 333
+@export var particleTypes := 3
+@export var particlesSize := 2
+var particleCount := 0
+
+@export var randomize_rules_on_reset := true
+
+var particles := PackedVector2Array() # posx, posy, type
+var particle_types := PackedInt32Array()
+var velocities := PackedVector2Array()
+
+# typing
+var attractionDetail := 10.0
+var rnd = Utils.Rnd
+var rnd_generator = Utils.Rnd.rnd
+var rules := PackedFloat32Array()
+
+var types := {
+	0: Color.from_string("#FF0050", Color.WHITE), # folly
+	1: Color.from_string("#00FA9A", Color.WHITE), # spring green
+	2: Color.from_string("#00BFFF", Color.WHITE), # deep sky blue
+	3: Color.from_string("#FFFFFF", Color.WHITE), # ghost white
+	4: Color.from_string("#FFFF33", Color.WHITE),  # electric yellow
+}
+
+func GetRule(inputType: int, targetType: int) -> float:
+	return rules[inputType * particleTypes + targetType]
+
+func SetRule(inputType: int, targetType: int, value: float) -> void:
+	rules[inputType * particleTypes + targetType] = value
+
+# temporary
+@onready var world_size := get_viewport_rect().size/2.0 * 0.95
+
+# spatial partitioning
+@export var cellSize := 50
+@onready var grid = Utils.Grid2D.new(cellSize, particleCountPerType * particleTypes)
+
+# rules
+@export var max_speed: float = 500
+@export var max_force: float = 0.8
+@export var damping_force: float = 0.98
+
+@export var particle_repulsion_distance: float = 5
+@export var particle_attraction_distance: float = 200
+
+# ui
+var ui := CanvasLayer.new()
+var debug_panel := PanelContainer.new()
+var debug_label := Label.new()
+
+var checked_particles := 0
+var found_particles := 0
+
+var rule_matrix := RuleMatrix.new()
+
+func _on_rule_changed(
+	input_type: int,
+	target_type: int,
+	value: float
+) -> void:
+	SetRule(input_type, target_type, value)
+
+	var data := rules.to_byte_array()
+	rd.buffer_update(
+		rules_buffer,
+		0,
+		data.size(),
+		data
+	)
+
+# visuals
+var particle_mesh := QuadMesh.new()
+var particle_multimesh := MultiMesh.new()
+var particle_renderer := MultiMeshInstance2D.new()
+var particle_material := ShaderMaterial.new()
+
+# gpu compute shader
+var rd := RenderingServer.create_local_rendering_device()
+
+var position_buffer
+var velocity_buffer
+var type_buffer
+var rules_buffer
+var params_buffer
+
+var shader
+var pipeline
+var uniform_set
+var params_uniform_set
+
+func _compute_shader_setup():
+	# file
+	var shader_file := load("res://Scripts/test.glsl")
+	var shader_spirv = shader_file.get_spirv()
+	shader = rd.shader_create_from_spirv(shader_spirv)
+
+	# buffers
+	var position_data := particles.to_byte_array()
+	var velocity_data := velocities.to_byte_array()
+	var type_data := particle_types.to_byte_array()
+	var rules_data := rules.to_byte_array()
+
+	var params_data := PackedFloat32Array([
+		max_speed,
+		damping_force,
+		particle_attraction_distance,
+		particle_repulsion_distance,
+
+		0.016,
+		particleCount,
+		max_force,
+		particleTypes
+	]).to_byte_array()
+
+	position_buffer = rd.storage_buffer_create(
+		position_data.size(),
+		position_data
+	)
+
+	velocity_buffer = rd.storage_buffer_create(
+		velocity_data.size(),
+		velocity_data
+	)
+
+	type_buffer = rd.storage_buffer_create(
+		type_data.size(),
+		type_data
+	)
+
+	params_buffer = rd.uniform_buffer_create(
+		params_data.size(),
+		params_data
+	)
+
+	rules_buffer = rd.storage_buffer_create(
+		rules_data.size(),
+		rules_data
+	)
+
+	# uniforms
+	var position_uniform := RDUniform.new()
+	position_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	position_uniform.binding = 0
+	position_uniform.add_id(position_buffer)
+
+	var velocity_uniform := RDUniform.new()
+	velocity_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	velocity_uniform.binding = 1
+	velocity_uniform.add_id(velocity_buffer)
+
+	var type_uniform := RDUniform.new()
+	type_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	type_uniform.binding = 2
+	type_uniform.add_id(type_buffer)
+
+	var rules_uniform := RDUniform.new()
+	rules_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	rules_uniform.binding = 3
+	rules_uniform.add_id(rules_buffer)
+
+	var params_uniform := RDUniform.new()
+	params_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_UNIFORM_BUFFER
+	params_uniform.binding = 0
+	params_uniform.add_id(params_buffer)
+
+	# set 0
+	uniform_set = rd.uniform_set_create(
+		[
+			position_uniform,
+			velocity_uniform,
+			type_uniform,
+			rules_uniform
+		],
+		shader,
+		0
+	)
+
+	# set 1
+	params_uniform_set = rd.uniform_set_create(
+		[params_uniform],
+		shader,
+		1
+	)
+
+	pipeline = rd.compute_pipeline_create(shader)
+
+func _compute_step(dt: float) -> void:
+	var params_data := PackedFloat32Array([
+		max_speed,
+		damping_force,
+		particle_attraction_distance,
+		particle_repulsion_distance,
+
+		dt,
+		particleCount,
+		max_force,
+		particleTypes
+	]).to_byte_array()
+
+	rd.buffer_update(
+		params_buffer,
+		0,
+		params_data.size(),
+		params_data
+	)
+
+	var compute_list := rd.compute_list_begin()
+
+	rd.compute_list_bind_compute_pipeline(
+		compute_list,
+		pipeline
+	)
+
+	rd.compute_list_bind_uniform_set(
+		compute_list,
+		uniform_set,
+		0
+	)
+
+	rd.compute_list_bind_uniform_set(
+		compute_list,
+		params_uniform_set,
+		1
+	)
+
+	rd.compute_list_dispatch(
+		compute_list,
+		particleCount,
+		1,
+		1
+	)
+
+	rd.compute_list_end()
+
+	rd.submit()
+	rd.sync()
+
+	# getting output
+	var position_data := rd.buffer_get_data(position_buffer)
+	var velocity_data := rd.buffer_get_data(velocity_buffer)
+
+	particles = position_data.to_vector2_array()
+	velocities = velocity_data.to_vector2_array()
+
+func _draw_debug_info() -> void:
+	debug_label.text = (
+		"FPS: " + str(Engine.get_frames_per_second()) +
+		"\nParticles: " + str(particles.size()) +
+		"\nCell size: " + str(grid.cell_size) +
+		"\nAttraction distance: " + str(particle_attraction_distance) +
+		"\nCHECKS: " + str(particleCount**2)
+	)
+
+func _draw_multimesh_particles() -> void:
+	for i in range(particleCount):
+		particle_multimesh.set_instance_transform_2d(
+			i,
+			Transform2D(0.0, particles[i])
+		)
+		particle_multimesh.set_instance_color(
+			i,
+			types[particle_types[i]]
+		)
+
+func _particle_logic(dt: float) -> void:
+	grid.rebuild(particles)
+
+	var radius_offset := Vector2.ONE * particle_attraction_distance
+	for i in range(particleCount):
+		var force := grid.calculate_force(
+			particles[i],
+			particle_attraction_distance,
+			particle_repulsion_distance,
+			particles,
+			particle_types,
+			particle_types[i],
+			rules,
+			particleTypes,
+			max_speed,
+			radius_offset
+		)
+
+		var desired_vel := force.limit_length(max_speed)
+
+		var vel := velocities[i]
+		vel = vel.lerp(desired_vel, damping_force)
+		vel = vel.limit_length(max_speed)
+
+		particles[i] += vel * dt
+		velocities[i] = vel
+
+func _logic_setup():
+	rnd_generator.seed = 168
+	
+	particleCount = particleCountPerType * particleTypes
+
+	# Rules: randomize only when requested or when the matrix size changes.
+	if randomize_rules_on_reset or rules.size() != particleTypes * particleTypes:
+		rules.resize(particleTypes * particleTypes)
+
+		for i in range(rules.size()):
+			rules[i] = (
+				roundf(Utils.Rnd.randf() * attractionDetail)
+				/ attractionDetail
+			) * 2.0 - 1.0
+
+	# Particles: regenerate positions and velocities every reset.
+	particles.resize(particleCount)
+	velocities.resize(particleCount)
+	particle_types.resize(particleCount)
+
+	for i in range(particleCountPerType):
+		var val := particleTypes * i
+
+		for j in range(particleTypes):
+			var index := val + j
+
+			particles[index] = Vector2(
+				Utils.Rnd.range_f(-world_size.x, world_size.x),
+				Utils.Rnd.range_f(-world_size.y, world_size.y)
+			)
+
+			particle_types[index] = j
+
+			velocities[index] = Vector2(
+				Utils.Rnd.range_f(-max_speed, max_speed),
+				Utils.Rnd.range_f(-max_speed, max_speed)
+			)
+
+func _particle_rendering_setup():
+	particle_mesh.size = Vector2(particlesSize * 2, particlesSize * 2)
+
+	var multi_shader := Shader.new()
+	multi_shader.code = """
+	shader_type canvas_item;
+
+	void fragment() {
+		vec2 p = UV - vec2(0.5);
+
+		float d = length(p) - 0.5;
+		float aa = fwidth(d);
+
+		COLOR.a *= 1.0 - smoothstep(-aa, aa, d);
+	}
+	"""
+
+	particle_material.shader = multi_shader
+	particle_renderer.material = particle_material
+
+	particle_multimesh.mesh = particle_mesh
+	particle_multimesh.transform_format = MultiMesh.TRANSFORM_2D
+	particle_multimesh.use_colors = true
+	particle_multimesh.instance_count = particleCount
+
+	particle_renderer.multimesh = particle_multimesh
+
+	add_child(particle_renderer)
+
+func _ui_setup():
+	debug_panel.position = Vector2(10, 10)
+
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.1, 0.1, 0.1, 0.95)
+	bg.corner_radius_top_left = 6
+	bg.corner_radius_top_right = 6
+	bg.corner_radius_bottom_left = 6
+	bg.corner_radius_bottom_right = 6
+	bg.content_margin_left = 10
+	bg.content_margin_right = 10
+	bg.content_margin_top = 8
+	bg.content_margin_bottom = 8
+	debug_panel.add_theme_stylebox_override("panel", bg)
+
+	add_child(ui)
+	ui.add_child(debug_panel)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 8)
+	debug_panel.add_child(content)
+
+	content.add_child(debug_label)
+
+	# Matrix
+	rule_matrix.setup(particleTypes, rules, types)
+	rule_matrix.rule_changed.connect(_on_rule_changed)
+	content.add_child(rule_matrix)
+
+	# Reset button
+	var reset_button := Button.new()
+	reset_button.text = "RESET"
+	reset_button.pressed.connect(_reset_simulation)
+	content.add_child(reset_button)
+
+func _ready() -> void:
+	_logic_setup()
+
+	_particle_rendering_setup()
+	_ui_setup()
+	
+	_compute_shader_setup()
+
+func _process(dt: float) -> void:
+	# visuals
+	queue_redraw()
+	_draw_debug_info()
+	_draw_multimesh_particles()
+
+	# logic
+	_compute_step(dt)
+	# _particle_logic(dt)
+
+func _reset_simulation() -> void:
+	_logic_setup()
+
+	rd.buffer_update(
+		position_buffer,
+		0,
+		particles.to_byte_array().size(),
+		particles.to_byte_array()
+	)
+
+	rd.buffer_update(
+		velocity_buffer,
+		0,
+		velocities.to_byte_array().size(),
+		velocities.to_byte_array()
+	)
+
+	rd.buffer_update(
+		type_buffer,
+		0,
+		particle_types.to_byte_array().size(),
+		particle_types.to_byte_array()
+	)
+
+	rd.buffer_update(
+		rules_buffer,
+		0,
+		rules.to_byte_array().size(),
+		rules.to_byte_array()
+	)
+	
+	rule_matrix.refresh(rules)
+
+#func _draw() -> void:
+	#for i in range(len(particles)):
+		#var p := particles[i]
+		#draw_circle(Vector2(p.x, p.y), particlesSize, types[particle_types[i]], true, -1, true)
+
+
+================================================================================
+FILE: camera_2d.gd
+PATH: camera_2d.gd
+================================================================================
+
+extends Camera2D
+
+@export var move_speed := 1000.0
+@export var shift_multiplier := 3.0
+@export var zoom_speed := 1.15
+@export var min_zoom := 0.1
+@export var max_zoom := 5.0
+
+func _process(dt: float) -> void:
+	var direction := Vector2(
+		(Input.is_key_pressed(KEY_D) as float) - (Input.is_key_pressed(KEY_A) as float),
+		(Input.is_key_pressed(KEY_S) as float) - (Input.is_key_pressed(KEY_W) as float)
+	)
+
+	if direction.length_squared() > 0.0:
+		direction = direction.normalized()
+
+	var speed := move_speed
+
+	if Input.is_key_pressed(KEY_SHIFT):
+		speed *= shift_multiplier
+
+	position += direction * speed * dt
+
+	if Input.is_key_pressed(KEY_E):
+		zoom *= pow(zoom_speed, dt * 10.0)
+
+	if Input.is_key_pressed(KEY_Q):
+		zoom /= pow(zoom_speed, dt * 10.0)
+
+	zoom.x = clamp(zoom.x, min_zoom, max_zoom)
+	zoom.y = clamp(zoom.y, min_zoom, max_zoom)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+			zoom *= zoom_speed
+
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+			zoom /= zoom_speed
+
+		zoom.x = clamp(zoom.x, min_zoom, max_zoom)
+		zoom.y = clamp(zoom.y, min_zoom, max_zoom)
+
+
+================================================================================
+FILE: changes.txt
+PATH: changes.txt
+================================================================================
+
+if not cells.has(cell):
+	cells[cell] = -1
+			
+next[i] = cells[cell]
+cells[cell] = i
+
+
+var previous: int = cells.get(cell, -1)
+
+next[i] = previous
+cells[cell] = i
+
+
+================================================================================
+FILE: compute.gd
+PATH: compute.gd
+================================================================================
+
+extends Node
+
+
+================================================================================
+FILE: compute_test.gd
+PATH: compute_test.gd
+================================================================================
+
+extends Node
+
+var rd := RenderingServer.create_local_rendering_device()
+
+func _ready():
+	var data := PackedFloat32Array([0, 1, 2, 3, 4])
+
+	var buffer := rd.storage_buffer_create(data.to_byte_array().size(), data.to_byte_array())
+
+	var shader_file := load("res://Scripts/test.glsl")
+	var shader_spirv = shader_file.get_spirv()
+	var shader := rd.shader_create_from_spirv(shader_spirv)
+
+	var uniform := RDUniform.new()
+	uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	uniform.binding = 0
+	uniform.add_id(buffer)
+
+	var uniform_set := rd.uniform_set_create([uniform], shader, 0)
+	var pipeline := rd.compute_pipeline_create(shader)
+
+	var compute_list := rd.compute_list_begin()
+	rd.compute_list_bind_compute_pipeline(compute_list, pipeline)
+	rd.compute_list_bind_uniform_set(compute_list, uniform_set, 0)
+	rd.compute_list_dispatch(compute_list, 5, 1, 1)
+	rd.compute_list_end()
+
+	rd.submit()
+	rd.sync()
+
+	var result_bytes := rd.buffer_get_data(buffer)
+	var result := result_bytes.to_float32_array()
+
+	print(result)
+
+
+================================================================================
+FILE: grid_matrix.gd
+PATH: grid_matrix.gd
+================================================================================
+
+extends Control
+class_name RuleMatrix
+
+signal rule_changed(input_type: int, target_type: int, value: float)
+
+var rules: PackedFloat32Array
+var particle_types: int = 3
+var type_colors: Dictionary = {}
+
+var cell_size := 35.0
+var label_size := 15.0
+var cell_gap := 2.0
+
+
+func setup(
+	type_count: int,
+	initial_rules: PackedFloat32Array,
+	colors: Dictionary
+) -> void:
+	particle_types = type_count
+	rules = initial_rules
+	type_colors = colors
+
+	custom_minimum_size = Vector2(
+		label_size + particle_types * (cell_size + cell_gap),
+		label_size + particle_types * (cell_size + cell_gap)
+	)
+
+	queue_redraw()
+
+
+func _draw() -> void:
+	if rules.size() != particle_types * particle_types:
+		return
+
+	var font := ThemeDB.fallback_font
+	var font_size := 14
+
+	# Column headers: target particle types.
+	for target in range(particle_types):
+		var x := label_size + target * (cell_size + cell_gap)
+		draw_circle(
+			Vector2(x + cell_size / 2.0, label_size / 2.0),
+			6.0,
+			type_colors[target % type_colors.size()],
+			true,
+			-1,
+			true
+		)
+
+	# Row headers: input particle types.
+	for input_type in range(particle_types):
+		var y := label_size + input_type * (cell_size + cell_gap)
+		draw_circle(
+			Vector2(label_size / 2.0, y + cell_size / 2.0),
+			6.0,
+			type_colors[input_type % type_colors.size()],
+			true,
+			-1,
+			true
+		)
+
+	# Rule cells.
+	for input_type in range(particle_types):
+		for target in range(particle_types):
+			var index := input_type * particle_types + target
+			var value := rules[index]
+
+			var x := label_size + target * (cell_size + cell_gap)
+			var y := label_size + input_type * (cell_size + cell_gap)
+			var rect := Rect2(x, y, cell_size, cell_size)
+
+			draw_rect(rect, _value_color(value), true)
+			draw_rect(rect, Color(0.35, 0.35, 0.35), false, 1.0)
+
+			var text := "%.1f" % value
+			var text_width := font.get_string_size(
+				text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size
+			).x
+
+			draw_string(
+				font,
+				Vector2(
+					x + (cell_size - text_width) / 2.0,
+					y + cell_size / 2.0 + font_size * 0.35
+				),
+				text,
+				HORIZONTAL_ALIGNMENT_LEFT,
+				-1,
+				font_size,
+				Color.WHITE
+			)
+
+
+func _value_color(value: float) -> Color:
+	if value < 0.0:
+		return Color(0.95, 0.12, 0.16).lerp(
+			Color(0.10, 0.10, 0.10), clampf(value + 1.0, 0.0, 1.0)
+		)
+
+	return Color(0.10, 0.10, 0.10).lerp(
+		Color(0.10, 0.85, 0.35), clampf(value, 0.0, 1.0)
+	)
+
+
+func _gui_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	if not event.pressed:
+		return
+
+	var mouse: Vector2 = event.position
+	var column := int((mouse.x - label_size) / (cell_size + cell_gap))
+	var row := int((mouse.y - label_size) / (cell_size + cell_gap))
+
+	if row < 0 or row >= particle_types:
+		return
+	if column < 0 or column >= particle_types:
+		return
+
+	var local_x := fposmod(mouse.x - label_size, cell_size + cell_gap)
+	var local_y := fposmod(mouse.y - label_size, cell_size + cell_gap)
+
+	# Ignore clicks in the gaps between cells.
+	if local_x >= cell_size or local_y >= cell_size:
+		return
+
+	var index := row * particle_types + column
+
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		rules[index] = minf(2.0, snappedf(rules[index] + 0.1, 0.1))
+	elif event.button_index == MOUSE_BUTTON_RIGHT:
+		rules[index] = maxf(-1.0, snappedf(rules[index] - 0.1, 0.1))
+	else:
+		return
+
+	rule_changed.emit(row, column, rules[index])
+	queue_redraw()
+
+func refresh(new_rules: PackedFloat32Array) -> void:
+	rules = new_rules
+	queue_redraw()
+
+
+================================================================================
+FILE: test.glsl
+PATH: test.glsl
+================================================================================
+
+#[compute]
+#version 450
+
+layout(local_size_x = 1) in;
+
+layout(set = 0, binding = 0, std430) buffer Positions {
+    vec2 positions[];
+};
+
+layout(set = 0, binding = 1, std430) buffer Velocities {
+    vec2 velocities[];
+};
+
+layout(set = 0, binding = 2, std430) buffer Types {
+    int types[];
+};
+
+layout(set = 0, binding = 3, std430) buffer Rules {
+    float rules[];
+};
+
+layout(set = 1, binding = 0, std140) uniform Params {
+    vec4 params_a;
+    vec4 params_b;
+};
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+
+    vec2 center = positions[id];
+    int input_type = types[id];
+
+    vec2 force = vec2(0.0);
+
+    float repulsion_distance = params_a.w;
+    float attraction_distance = params_a.z;
+    float max_speed = params_a.x;
+
+    float interaction_distance = repulsion_distance + attraction_distance;
+
+    float repulsion_squared = repulsion_distance * repulsion_distance;
+    float interaction_squared = interaction_distance * interaction_distance;
+
+    float attraction_half = attraction_distance / 2.0;
+
+    int rule_base = input_type * int(params_b.w);
+
+    for (uint i = 0; i < uint(params_b.y); i++) {
+        vec2 diff = positions[i] - center;
+        float distance_squared = dot(diff, diff);
+
+        if (distance_squared == 0.0) {
+            continue;
+        }
+
+        if (distance_squared <= interaction_squared) {
+            float distance = sqrt(distance_squared);
+
+            if (distance <= repulsion_distance) {
+                // -1 at 0, 0 at repulsion distance
+                float force_value =
+                    -1.0 + distance / repulsion_distance;
+
+                // Negative force along diff = away from neighbor
+                force += diff / distance
+                    * (max_speed * force_value);
+            }
+            else {
+                // 0 -> 1 -> 0 across attraction range
+                float d = distance - repulsion_distance;
+                float t;
+
+                if (d <= attraction_half) {
+                    t = d / attraction_half;
+                }
+                else {
+                    t = 1.0 - (d - attraction_half) / attraction_half;
+                }
+
+                t *= params_b.z;
+
+                int rule_index = rule_base + types[i];
+
+                force += diff / distance
+                    * (max_speed * t)
+                    * rules[rule_index];
+            }
+        }
+    }
+
+    vec2 desired_velocity = force;
+
+    float force_length = length(desired_velocity);
+
+    if (force_length > max_speed) {
+        desired_velocity =
+            desired_velocity / force_length * max_speed;
+    }
+
+    vec2 velocity = velocities[id];
+
+    velocity = mix(
+        velocity,
+        desired_velocity,
+        params_a.y
+    );
+
+    float velocity_length = length(velocity);
+
+    if (velocity_length > max_speed) {
+        velocity =
+            velocity / velocity_length * max_speed;
+    }
+
+    positions[id] += velocity * params_b.x;
+    velocities[id] = velocity;
+}
+
+
+================================================================================
+FILE: Utils.gd
+PATH: Utils\Utils.gd
+================================================================================
+
+extends RefCounted
+class_name Utils
+
+class Rnd:
+	static var _rnd: RandomNumberGenerator
+
+	static var rnd: RandomNumberGenerator:
+		get:
+			if _rnd == null:
+				_rnd = RandomNumberGenerator.new()
+			return _rnd
+	
+	static func randf() -> float:
+		return rnd.randf()
+	
+	static func range_f(from: float, to: float) -> float:
+		return rnd.randf_range(from, to)
+	
+	static func range_i(from: int, to: int) -> int:
+		return rnd.randi_range(from, to)
+	
+	static func vector2D(magnitude: float) -> Vector2:
+		return Vector2(range_f(-magnitude, magnitude), range_f(-magnitude, magnitude))
+
+class Tweens:
+	static func create(node: Node) -> Tween:
+		return node.create_tween()
+		
+	static func natural(tween: Tween, callback: Callable, from: float, to: float, duration: float, easing: Tween.EaseType = Tween.EASE_IN_OUT):
+		return tween \
+			.tween_method(callback, from, to, duration) \
+			.set_trans(Tween.TRANS_SINE) \
+			.set_ease(easing)
+		
+	static func natural_short(tween: Tween, callback: Callable, duration: float, easing: Tween.EaseType = Tween.EASE_IN_OUT):
+		return natural(tween, callback, 0.0, 1.0, duration, easing)
+		
+	static func natural_parallel(tween: Tween, callback: Callable, from: float, to: float, duration: float, easing: Tween.EaseType = Tween.EASE_IN_OUT):
+		return natural(
+			tween.parallel(),
+			callback,
+			from,
+			to,
+			duration,
+			easing
+		)
+		
+	static func natural_short_parallel(tween: Tween, callback: Callable, duration: float, easing: Tween.EaseType = Tween.EASE_IN_OUT):
+		return natural_parallel(
+			tween,
+			callback,
+			0.0,
+			1.0,
+			duration,
+			easing
+		)
+
+class Grid2D:
+	var cell_size: float
+	var cells: Dictionary[Vector2i, int] = {}
+	var next: PackedInt32Array
+	
+	var checked_particles := 0
+	var found_particles := 0
+	
+	func _init(
+		p_cell_size: float,
+		item_count: int
+	) -> void:
+		cell_size = p_cell_size
+		next.resize(item_count)
+	
+	func clear() -> void:
+		cells.clear()
+	
+	func rebuild(positions: PackedVector2Array) -> void:
+		clear()
+		
+		for i in positions.size():
+			var cell := world_to_cell(positions[i])
+			
+			var previous: int = cells.get(cell, -1)
+
+			next[i] = previous
+			cells[cell] = i
+	
+	func world_to_cell(position: Vector2) -> Vector2i:
+		return Vector2i(
+			floori(position.x / cell_size),
+			floori(position.y / cell_size)
+		)
+	
+	func circle_query(
+		center: Vector2,
+		radius: float,
+		positions: PackedVector2Array,
+		callback: Callable
+	) -> Vector2i:
+		checked_particles = 0
+		found_particles = 0
+		
+		var min_cell := world_to_cell(center - Vector2.ONE * radius)
+		var max_cell := world_to_cell(center + Vector2.ONE * radius)
+		
+		var radius_squared := radius * radius
+		
+		for y in range(min_cell.y, max_cell.y + 1):
+			for x in range(min_cell.x, max_cell.x + 1):
+				var cell := Vector2i(x, y)
+				
+				if not cells.has(cell):
+					continue
+				
+				var particle := cells[cell]
+				
+				while particle != -1:
+					var offset := positions[particle] - center
+					
+					checked_particles += 1
+					
+					if offset.length_squared() <= radius_squared:
+						found_particles += 1
+						callback.call(particle, offset)
+					
+					particle = next[particle]
+		
+		return Vector2i(checked_particles, found_particles)
+		
+	func calculate_force(
+		center: Vector2,
+		radius: float,
+		repulsion_distance: float,
+		positions: PackedVector2Array,
+		particle_types: PackedInt32Array,
+		input_type: int,
+		rules: PackedFloat32Array,
+		type_count: int,
+		max_speed: float,
+		vector_radius: Vector2
+	) -> Vector2:
+		var force := Vector2.ZERO
+
+		var min_cell := world_to_cell(center - vector_radius)
+		var max_cell := world_to_cell(center + vector_radius)
+
+		var radius_squared := radius * radius
+		var repulsion_squared := repulsion_distance * repulsion_distance
+		var half := radius / 2.0
+		var rule_base := input_type * type_count
+
+		for y in range(min_cell.y, max_cell.y + 1):
+			for x in range(min_cell.x, max_cell.x + 1):
+				var cell := Vector2i(x, y)
+
+				var particle: int = cells.get(cell, -1)
+
+				if particle == -1:
+					continue
+
+				while particle != -1:
+					var diff := positions[particle] - center
+					var distance_squared := diff.length_squared()
+
+					if distance_squared <= radius_squared:
+						var distance := sqrt(distance_squared)
+						
+						if distance_squared == 0.0:
+							particle = next[particle]
+							continue
+
+						if distance_squared <= repulsion_squared:
+							force -= diff / distance * remap(
+								distance,
+								repulsion_distance,
+								0.0,
+								0.0,
+								max_speed
+							)
+						else:
+							var t: float = 1.0 - (abs(distance - half) / half)
+
+							var rule_index := rule_base + particle_types[particle]
+
+							force += diff / distance \
+								* lerpf(0.0, max_speed, t) \
+								* rules[rule_index]
+
+					particle = next[particle]
+
+		return force
+
+
